@@ -1,0 +1,1002 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Canon F-715SG 공학용 계산기</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Config Customization -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            calcBg: '#1f2124',
+            calcBorder: '#313539',
+            lcdBg: '#8fa18a',
+            lcdText: '#182017'
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons (모든 아이콘 대응) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* 모바일 터치 최적화 및 스크롤 방지 */
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #090b0c;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    /* 스크롤바 숨기기 */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* 버튼 누름 반응 효과 */
+    .btn-active:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-1 sm:p-4 text-slate-100 font-sans">
+
+  <!-- 메인 계산기 쉘 바디 (모바일 100dvh 기준 피팅) -->
+  <div class="w-full max-w-[380px] h-[98dvh] max-h-[820px] bg-gradient-to-b from-[#2a2d31] via-[#1f2124] to-[#121415] rounded-[30px] shadow-[0_15px_40px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.1)] border-[4px] border-[#313539] flex flex-col justify-between p-3.5 relative overflow-hidden">
+    
+    <!-- 상단 파트: 브랜드 로고 및 솔라 패널 -->
+    <div class="flex justify-between items-center px-1 pt-1 pb-1.5 shrink-0">
+      <div class="flex flex-col">
+        <span class="text-xl font-bold tracking-wider text-[#e2e7ec] font-serif leading-none">Canon</span>
+        <span class="text-[9px] text-[#7f868c] font-mono tracking-wider mt-0.5">F-715SG</span>
+      </div>
+      
+      <!-- 캐논 듀얼 셀 솔라 패널 -->
+      <div class="w-22 h-5 bg-gradient-to-r from-[#291a18] via-[#422a25] to-[#291a18] rounded border border-[#0d0e0f] shadow-[inset_0_1.5px_4px_rgba(0,0,0,0.85)] flex items-center justify-around relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+        <div class="w-[1px] h-full bg-[#1c1210] opacity-80"></div>
+        <div class="w-[1px] h-full bg-[#1c1210] opacity-80"></div>
+        <div class="w-[1px] h-full bg-[#1c1210] opacity-80"></div>
+      </div>
+    </div>
+
+    <!-- 복각 리얼 LCD 스크린 영역 -->
+    <div class="bg-lcdBg p-2.5 rounded-lg border-[2.5px] border-[#131415] shadow-[inset_0_3px_8px_rgba(0,0,0,0.75)] relative overflow-hidden mb-2.5 shrink-0">
+      <div class="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/15 pointer-events-none z-20"></div>
+      <div class="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#111_1px,transparent_1px)] [background-size:4px_4px] z-10"></div>
+
+      <!-- 인디케이터 라인 -->
+      <div class="flex justify-between items-center text-[9px] font-mono text-[#1d261b] font-extrabold tracking-wider border-b border-[#7e907a] pb-0.5 mb-1.5 opacity-90">
+        <div class="flex gap-2">
+          <span id="ind-shift" class="opacity-15 transition-all">S</span>
+          <span id="ind-alpha" class="opacity-15 transition-all">A</span>
+          <span id="ind-mem" class="opacity-15 transition-all">M</span>
+        </div>
+        <div class="flex gap-2">
+          <span id="ind-deg" class="font-black">DEG</span>
+          <span id="ind-rad" class="opacity-15">RAD</span>
+        </div>
+      </div>
+
+      <!-- 듀얼 라인 수식 및 결과 표시부 -->
+      <div class="h-14 flex flex-col justify-between text-right font-mono text-lcdText relative z-10">
+        <!-- 상단 수식 라인 -->
+        <div id="display-formula" class="text-[12px] tracking-wide overflow-x-auto whitespace-nowrap min-h-[16px] flex items-center justify-end scrollbar-none opacity-85 select-all"></div>
+        <!-- 하단 결과 라인 -->
+        <div id="display-input" class="text-2xl font-bold tracking-tight overflow-x-auto whitespace-nowrap scrollbar-none leading-none select-all pt-1">0</div>
+      </div>
+    </div>
+
+    <!-- 상단 원형 D-Pad 및 제어 버튼 라인 -->
+    <div class="grid grid-cols-5 gap-1 items-center mb-2.5 shrink-0">
+      <div class="flex flex-col gap-1 col-span-2">
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="toggleShift()" id="btn-shift" class="btn-active h-6 rounded text-[9px] font-extrabold uppercase tracking-wider transition-all shadow flex items-center justify-center border-b-2 bg-[#536575] text-[#dce5ed] border-[#313c47]">
+            Shift
+          </button>
+          <button onclick="toggleAlpha()" id="btn-alpha" class="btn-active h-6 rounded text-[9px] font-extrabold uppercase tracking-wider transition-all shadow flex items-center justify-center border-b-2 bg-[#536575] text-[#dce5ed] border-[#313c47]">
+            Alpha
+          </button>
+        </div>
+        <button onclick="showHelpModal()" class="btn-active h-5.5 rounded bg-[#2a2d32] hover:bg-[#34383e] text-[9px] text-[#939ca5] transition-all flex items-center justify-center gap-1 border-b border-[#141517]">
+          <i data-lucide="help-circle" class="w-2.5 h-2.5 text-teal-400"></i>
+          <span>GUIDE</span>
+        </button>
+      </div>
+
+      <!-- 중앙 캐논 복각 D-Pad -->
+      <div class="col-span-1 flex justify-center">
+        <div class="relative w-14 h-14 bg-[#2b343d] rounded-full border border-[#14181d] shadow-[0_2.5px_6px_rgba(0,0,0,0.5)] flex items-center justify-center">
+          <button onclick="handleDPad('up')" class="absolute top-0.5 w-8 h-4 flex items-center justify-center text-[#8da1b4] hover:text-white transition-colors active:scale-90">
+            <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i>
+          </button>
+          <button class="absolute left-0.5 w-4 h-8 flex items-center justify-center text-[#8da1b4]/40 cursor-default">
+            <i data-lucide="arrow-left" class="w-3 h-3"></i>
+          </button>
+          <button class="absolute right-0.5 w-4 h-8 flex items-center justify-center text-[#8da1b4]/40 cursor-default">
+            <i data-lucide="arrow-right" class="w-3 h-3"></i>
+          </button>
+          <button onclick="handleDPad('down')" class="absolute bottom-0.5 w-8 h-4 flex items-center justify-center text-[#8da1b4] hover:text-white transition-colors active:scale-90">
+            <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+          </button>
+          <div class="w-5 h-5 bg-[#1e242a] rounded-full border border-[#101317]"></div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1 col-span-2">
+        <div class="grid grid-cols-2 gap-1">
+          <button onclick="toggleMode()" class="btn-active h-6 rounded text-[9px] font-extrabold uppercase bg-[#536575] hover:bg-[#607487] text-[#dce5ed] border-b-2 border-[#313c47] transition-all flex items-center justify-center">
+            Mode
+          </button>
+          <button onclick="allClear()" class="btn-active h-6 rounded text-[9px] font-extrabold uppercase bg-[#cf5a61] hover:bg-[#df666d] text-white border-b-2 border-[#8e3237] transition-all flex items-center justify-center">
+            ON/CA
+          </button>
+        </div>
+        <button onclick="showHistory()" class="btn-active h-5.5 rounded bg-[#2a2d32] hover:bg-[#34383e] text-[9px] text-[#939ca5] transition-all flex items-center justify-center gap-1 border-b border-[#141517]">
+          <i data-lucide="history" class="w-2.5 h-2.5 text-amber-400"></i>
+          <span>HISTORY</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2차 중간 특수 함수 연산자 영역 (완벽 보정형 그리드) -->
+    <div class="bg-[#17181a] p-1.5 rounded-xl border border-[#242629] mb-2.5 flex-1 flex flex-col justify-between gap-1 overflow-hidden">
+      
+      <!-- Row 1 -->
+      <div class="grid grid-cols-5 gap-1.5">
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">GCD</span>
+          <button onclick="inputFunc('factorial')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">LCM</button>
+        </div>
+        <div class="flex flex-col items-center col-span-2">
+          <span class="text-[7.5px] text-[#3ca16e] font-mono leading-none min-h-[9px] mb-0.5">Q↔r</span>
+          <button class="w-full h-7 rounded bg-[#313438]/55 text-slate-500 text-[9px] font-bold border-b border-[#161718] flex items-center justify-center cursor-not-allowed">Q...r</button>
+        </div>
+        <div class="flex flex-col items-center col-span-2">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">◀ENG</span>
+          <button class="w-full h-7 rounded bg-[#313438]/55 text-slate-500 text-[9px] font-bold border-b border-[#161718] flex items-center justify-center cursor-not-allowed">ENG</button>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="grid grid-cols-5 gap-1.5">
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">x!</span>
+          <button onclick="inputFunc('reciprocal')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">x⁻¹</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">³√</span>
+          <button onclick="inputFunc('square')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">x³</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">d/c</span>
+          <button onclick="inputFunc('fraction')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">a b/c</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">⁴√</span>
+          <button onclick="inputFunc('sqrt')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">√</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">xʸ</span>
+          <button onclick="inputFunc('pow')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">^</button>
+        </div>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="grid grid-cols-5 gap-1.5">
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">x³</span>
+          <button onclick="inputFunc('square')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">x²</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">10ˣ</span>
+          <button onclick="inputFunc('log')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">log</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">eˣ</span>
+          <button onclick="inputFunc('ln')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">In</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">A</span>
+          <button onclick="inputNumber('-')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">(-)</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">B</span>
+          <button onclick="inputOperator(',')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">,</button>
+        </div>
+      </div>
+
+      <!-- Row 4 -->
+      <div class="grid grid-cols-5 gap-1.5">
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">C</span>
+          <button class="w-full h-7 rounded bg-[#313438]/55 text-slate-500 text-[9px] font-bold border-b border-[#161718] flex items-center justify-center cursor-not-allowed">hyp</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">sin⁻¹ D</span>
+          <button onclick="inputFunc('sin')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">sin</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">cos⁻¹ E</span>
+          <button onclick="inputFunc('cos')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">cos</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">tan⁻¹ F</span>
+          <button onclick="inputFunc('tan')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">tan</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">STO</span>
+          <button class="w-full h-7 rounded bg-[#313438]/55 text-slate-500 text-[9px] font-bold border-b border-[#161718] flex items-center justify-center cursor-not-allowed">RCL</button>
+        </div>
+      </div>
+
+      <!-- Row 5 -->
+      <div class="grid grid-cols-5 gap-1.5">
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">X %</span>
+          <button class="w-full h-7 rounded bg-[#313438]/55 text-slate-500 text-[9px] font-bold border-b border-[#161718] flex items-center justify-center cursor-not-allowed">Abs</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">Y</span>
+          <button onclick="inputFunc('parenOpen')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">(</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">;</span>
+          <button onclick="inputFunc('parenClose')" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-slate-200 border-b border-[#161718] flex items-center justify-center">)</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">CD</span>
+          <button class="w-full h-7 rounded bg-[#313438]/55 text-slate-500 text-[9px] font-bold border-b border-[#161718] flex items-center justify-center cursor-not-allowed">Data</button>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-[7.5px] text-[#e28c31] font-mono leading-none min-h-[9px] mb-0.5">M- M</span>
+          <button onclick="inputAns()" class="btn-active w-full h-7 rounded bg-[#313438] hover:bg-[#3d4247] text-[9px] font-bold text-[#e28c31] border-b border-[#161718] flex items-center justify-center">M+</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3차 메인 숫자 키패드 & 오퍼레이션 영역 -->
+    <div class="grid grid-cols-5 gap-x-1.5 gap-y-1.5 shrink-0">
+      
+      <!-- Row 1 -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#7f868c] font-mono leading-none min-h-[10px] mb-0.5">S-PTS</span>
+        <button onclick="inputNumber('7')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">7</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#7f868c] font-mono leading-none min-h-[10px] mb-0.5">S-SUM</span>
+        <button onclick="inputNumber('8')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">8</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#7f868c] font-mono leading-none min-h-[10px] mb-0.5">S-VAR</span>
+        <button onclick="inputNumber('9')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">9</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <div class="flex gap-1 text-[7.5px] font-bold font-mono leading-none min-h-[10px] mb-0.5">
+          <span class="text-[#e28c31]">INS</span>
+          <span class="text-[#64b5f6]">CLR</span>
+        </div>
+        <button onclick="backspace()" class="btn-active w-full h-11 rounded-xl text-xs font-bold uppercase bg-[#4a5056] hover:bg-[#5a6168] text-white border-b-2 border-[#2c3135] flex items-center justify-center">DEL</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#64b5f6] font-mono leading-none min-h-[10px] mb-0.5">OFF</span>
+        <button onclick="clearEntry()" class="btn-active w-full h-11 rounded-xl text-xs font-bold uppercase bg-[#cf5a61] hover:bg-[#df666d] text-white border-b-2 border-[#8e3237] flex items-center justify-center">CE/C</button>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="inputNumber('4')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">4</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="inputNumber('5')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">5</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="inputNumber('6')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">6</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#3ca16e] font-mono leading-none min-h-[10px] mb-0.5">nPr</span>
+        <button onclick="inputOperator('×')" class="btn-active w-full h-11 rounded-xl text-xl font-bold bg-[#33373b] hover:bg-[#41464b] text-white border-b-2 border-[#1c1f21] flex items-center justify-center">×</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#3ca16e] font-mono leading-none min-h-[10px] mb-0.5">nCr</span>
+        <button onclick="inputOperator('÷')" class="btn-active w-full h-11 rounded-xl text-xl font-bold bg-[#33373b] hover:bg-[#41464b] text-white border-b-2 border-[#1c1f21] flex items-center justify-center">÷</button>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="inputNumber('1')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">1</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="inputNumber('2')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">2</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="inputNumber('3')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">3</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#e28c31] font-mono leading-none min-h-[10px] mb-0.5">Pol(</span>
+        <button onclick="inputOperator('+')" class="btn-active w-full h-11 rounded-xl text-xl font-bold bg-[#33373b] hover:bg-[#41464b] text-white border-b-2 border-[#1c1f21] flex items-center justify-center">+</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#e28c31] font-mono leading-none min-h-[10px] mb-0.5">Rec(</span>
+        <button onclick="inputOperator('-')" class="btn-active w-full h-11 rounded-xl text-xl font-bold bg-[#33373b] hover:bg-[#41464b] text-white border-b-2 border-[#1c1f21] flex items-center justify-center">-</button>
+      </div>
+
+      <!-- Row 4 -->
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#e28c31] font-mono leading-none min-h-[10px] mb-0.5">ROUND</span>
+        <button onclick="inputNumber('0')" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">0</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-[#e28c31] font-mono leading-none min-h-[10px] mb-0.5">Rand</span>
+        <button onclick="inputDecimal()" class="btn-active w-full h-11 rounded-xl text-lg font-bold font-mono bg-[#eceff1] hover:bg-[#f5f7f8] text-[#1e252b] border-b-2 border-[#b0bec5] flex items-center justify-center">.</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <div class="flex gap-1 text-[8px] font-bold font-mono leading-none min-h-[10px] mb-0.5">
+          <span class="text-[#e28c31]">π</span>
+          <span class="text-[#3ca16e]">e</span>
+        </div>
+        <button onclick="inputExp()" class="btn-active w-full h-11 rounded-xl text-xs font-bold font-mono bg-[#33373b] hover:bg-[#41464b] text-slate-200 border-b-2 border-[#1c1f21] flex items-center justify-center">EXP</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <div class="flex gap-1 text-[7.5px] font-bold font-mono leading-none min-h-[10px] mb-0.5">
+          <span class="text-[#e28c31]">DRG▶</span>
+          <span class="text-[#3ca16e]">i-Rand</span>
+        </div>
+        <button onclick="inputAns()" class="btn-active w-full h-11 rounded-xl text-xs font-bold bg-[#33373b] hover:bg-[#41464b] text-slate-200 border-b-2 border-[#1c1f21] flex items-center justify-center">Ans</button>
+      </div>
+      <div class="flex flex-col items-center">
+        <span class="text-[8px] text-transparent font-mono leading-none min-h-[10px] mb-0.5">&nbsp;</span>
+        <button onclick="evaluateFormula()" class="btn-active w-full h-11 rounded-xl text-xl font-bold bg-[#33373b] hover:bg-[#41464b] text-amber-400 border-b-2 border-[#1c1f21] flex items-center justify-center">=</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- 역사적인 히스토리 오버레이 모달 -->
+  <div id="modal-history" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="w-full max-w-sm bg-[#1b1d20] border border-[#2d3238] p-5 rounded-2xl shadow-2xl flex flex-col max-h-[70vh]">
+      <div class="flex justify-between items-center pb-3 border-b border-[#2d3238]">
+        <h3 class="text-md font-bold text-amber-400 flex items-center gap-2 font-mono">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span>계산 히스토리</span>
+        </h3>
+        <button onclick="closeHistory()" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div id="history-container" class="flex-1 overflow-y-auto py-3 space-y-2.5">
+        <!-- 동적 계산 로그 렌더링 영역 -->
+      </div>
+
+      <button onclick="clearAllHistory()" id="btn-clear-history" class="w-full mt-2 py-2.5 bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/60 text-rose-300 rounded-lg font-bold text-xs hidden">
+        히스토리 초기화
+      </button>
+    </div>
+  </div>
+
+  <!-- 사용 가이드 모달 -->
+  <div id="modal-help" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="w-full max-w-sm bg-[#1b1d20] border border-[#2d3238] p-5 rounded-2xl shadow-2xl">
+      <div class="flex justify-between items-center pb-3 border-b border-[#2d3238]">
+        <h3 class="text-md font-bold text-teal-400 flex items-center gap-1.5">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          <span>F-715SG 조작 가이드</span>
+        </h3>
+        <button onclick="closeHelpModal()" class="p-1 hover:bg-slate-800 rounded text-slate-400">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs text-slate-300 py-4 max-h-[50vh] overflow-y-auto scrollbar-none">
+        <div class="p-2.5 bg-[#24272c] rounded-lg border border-[#31363d]">
+          <h4 class="font-extrabold text-amber-500 text-[11px] mb-1">🎮 D-Pad 히스토리 탐색</h4>
+          <p class="text-slate-400 leading-relaxed text-[10.5px]">
+            중앙 D-Pad의 **위(Up) 및 아래(Down)** 버튼을 클릭하여 LCD 스크린 내부에서 과거 연산 내역들을 손쉽게 위아래로 토글해 볼 수 있습니다.
+          </p>
+        </div>
+
+        <div class="p-2.5 bg-[#24272c] rounded-lg border border-[#31363d]">
+          <h4 class="font-extrabold text-teal-400 text-[11px] mb-1">📐 DEG ⇄ RAD 자동 동조</h4>
+          <p class="text-slate-400 leading-relaxed text-[10.5px]">
+            **Mode** 버튼을 클릭하면 삼각함수의 기준 각도 환경이 DEG 모드와 RAD 모드로 상호 즉시 오갑니다.
+          </p>
+        </div>
+
+        <div class="p-2.5 bg-[#24272c] rounded-lg border border-[#31363d]">
+          <h4 class="font-extrabold text-[#cf5a61] text-[11px] mb-1">🧹 초기화 규칙</h4>
+          <p class="text-slate-400 leading-relaxed text-[10.5px]">
+            - **ON/CA** 버튼은 수식과 임력을 완전히 클리어(All Clear)합니다.<br />
+            - **CE/C** 버튼은 계산 중 수식은 보존하고 현재 입력하고 있는 숫자만 지웁니다(Clear Entry).
+          </p>
+        </div>
+      </div>
+
+      <button onclick="closeHelpModal()" class="w-full py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-lg font-bold text-xs">
+        확인 완료
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 상태 원형 보존 설계
+    let displayFormula = '';
+    let currentInput = '0';
+    let evalFormula = '';
+    let isShift = false;
+    let isAlpha = false;
+    let isDegree = true;
+    let lastAnswer = '0';
+    let isEvaluated = false;
+    let history = [];
+    let historyIndex = -1;
+
+    // DOM 선택 캐싱
+    const displayFormulaEl = document.getElementById('display-formula');
+    const displayInputEl = document.getElementById('display-input');
+    const indShift = document.getElementById('ind-shift');
+    const indAlpha = document.getElementById('ind-alpha');
+    const indMem = document.getElementById('ind-mem');
+    const indDeg = document.getElementById('ind-deg');
+    const indRad = document.getElementById('ind-rad');
+
+    const btnShift = document.getElementById('btn-shift');
+    const btnAlpha = document.getElementById('btn-alpha');
+
+    // 수식 안전 수학 파서 바인딩
+    const mathScope = {
+      sin: (x) => isDegree ? Math.sin(x * Math.PI / 180) : Math.sin(x),
+      cos: (x) => isDegree ? Math.cos(x * Math.PI / 180) : Math.cos(x),
+      tan: (x) => isDegree ? Math.tan(x * Math.PI / 180) : Math.tan(x),
+      asin: (x) => isDegree ? Math.asin(x) * 180 / Math.PI : Math.asin(x),
+      acos: (x) => isDegree ? Math.acos(x) * 180 / Math.PI : Math.acos(x),
+      atan: (x) => isDegree ? Math.atan(x) * 180 / Math.PI : Math.atan(x),
+      log: (x) => Math.log10(x),
+      ln: (x) => Math.log(x),
+      sqrt: (x) => Math.sqrt(x),
+      cbrt: (x) => Math.cbrt(x),
+      fact: (n) => {
+        if (n < 0 || !Number.isInteger(n)) return NaN;
+        if (n === 0 || n === 1) return 1;
+        let r = 1;
+        for (let i = 2; i <= n; i++) r *= i;
+        return r;
+      },
+      pi: Math.PI,
+      e: Math.E
+    };
+
+    function updateDisplay() {
+      displayFormulaEl.textContent = displayFormula || '';
+      displayInputEl.textContent = currentInput;
+
+      // 인디케이터 관리
+      if (isShift) {
+        indShift.className = 'bg-[#1d261b] text-lcdBg px-0.5 rounded opacity-100 font-extrabold';
+        btnShift.className = 'btn-active h-6 rounded text-[9px] font-extrabold uppercase tracking-wider transition-all shadow flex items-center justify-center border-b-2 bg-[#e28c31] text-slate-950 border-[#85511b]';
+      } else {
+        indShift.className = 'opacity-15';
+        btnShift.className = 'btn-active h-6 rounded text-[9px] font-extrabold uppercase tracking-wider transition-all shadow flex items-center justify-center border-b-2 bg-[#536575] text-[#dce5ed] border-[#313c47]';
+      }
+
+      if (isAlpha) {
+        indAlpha.className = 'bg-[#1d261b] text-lcdBg px-0.5 rounded opacity-100 font-extrabold';
+        btnAlpha.className = 'btn-active h-6 rounded text-[9px] font-extrabold uppercase tracking-wider transition-all shadow flex items-center justify-center border-b-2 bg-[#3ca16e] text-slate-950 border-[#1e583a]';
+      } else {
+        indAlpha.className = 'opacity-15';
+        btnAlpha.className = 'btn-active h-6 rounded text-[9px] font-extrabold uppercase tracking-wider transition-all shadow flex items-center justify-center border-b-2 bg-[#536575] text-[#dce5ed] border-[#313c47]';
+      }
+
+      if (history.length > 0) {
+        indMem.className = 'opacity-100';
+      } else {
+        indMem.className = 'opacity-15';
+      }
+
+      if (isDegree) {
+        indDeg.className = 'font-black opacity-100';
+        indRad.className = 'opacity-15';
+      } else {
+        indDeg.className = 'opacity-15';
+        indRad.className = 'font-black opacity-100';
+      }
+    }
+
+    // 숫자 제어
+    function inputNumber(num) {
+      if (isEvaluated) {
+        displayFormula = '';
+        evalFormula = '';
+        currentInput = num;
+        isEvaluated = false;
+      } else {
+        if (currentInput === '0' || currentInput === 'Error') {
+          currentInput = num;
+        } else {
+          currentInput = currentInput + num;
+        }
+      }
+      updateDisplay();
+    }
+
+    // 소수점 제어
+    function inputDecimal() {
+      if (isEvaluated) {
+        displayFormula = '';
+        evalFormula = '';
+        currentInput = '0.';
+        isEvaluated = false;
+        updateDisplay();
+        return;
+      }
+      if (!currentInput.includes('.')) {
+        currentInput = currentInput + '.';
+      }
+      updateDisplay();
+    }
+
+    // 오퍼레이터 입력 제어
+    function inputOperator(op) {
+      let mapOp = op;
+      let evalOp = op;
+      if (op === '×') evalOp = '*';
+      if (op === '÷') evalOp = '/';
+
+      if (isEvaluated) {
+        displayFormula = currentInput + ' ' + mapOp + ' ';
+        evalFormula = currentInput + ' ' + evalOp + ' ';
+        currentInput = '0';
+        isEvaluated = false;
+      } else {
+        const displayFormulaTrimmed = displayFormula.trim();
+        const lastChar = displayFormulaTrimmed[displayFormulaTrimmed.length - 1];
+        
+        if (currentInput !== '0') {
+          displayFormula = displayFormula + currentInput + ' ' + mapOp + ' ';
+          evalFormula = evalFormula + currentInput + ' ' + evalOp + ' ';
+          currentInput = '0';
+        } else if (['+', '-', '×', '÷'].includes(lastChar)) {
+          displayFormula = displayFormula.slice(0, -2) + mapOp + ' ';
+          evalFormula = evalFormula.slice(0, -2) + evalOp + ' ';
+        } else {
+          displayFormula = displayFormula + '0 ' + mapOp + ' ';
+          evalFormula = evalFormula + '0 ' + evalOp + ' ';
+        }
+      }
+      updateDisplay();
+    }
+
+    // 특수 기능 입력부
+    function inputFunc(funcType) {
+      let label = '';
+      let evalStr = '';
+
+      if (isEvaluated) {
+        displayFormula = '';
+        evalFormula = '';
+        isEvaluated = false;
+      }
+
+      switch (funcType) {
+        case 'sin':
+          label = isShift ? 'asin(' : 'sin(';
+          evalStr = isShift ? 'asin(' : 'sin(';
+          break;
+        case 'cos':
+          label = isShift ? 'acos(' : 'cos(';
+          evalStr = isShift ? 'acos(' : 'cos(';
+          break;
+        case 'tan':
+          label = isShift ? 'atan(' : 'tan(';
+          evalStr = isShift ? 'atan(' : 'tan(';
+          break;
+        case 'ln':
+          label = isShift ? 'e^(' : 'ln(';
+          evalStr = isShift ? 'e**(' : 'ln(';
+          break;
+        case 'log':
+          label = isShift ? '10^(' : 'log(';
+          evalStr = isShift ? '10**(' : 'log(';
+          break;
+        case 'sqrt':
+          label = isShift ? '³√(' : '√(';
+          evalStr = isShift ? 'cbrt(' : 'sqrt(';
+          break;
+        case 'pow':
+          label = '^';
+          evalStr = '**';
+          break;
+        case 'square':
+          label = isShift ? '^3' : '^2';
+          evalStr = isShift ? '**3' : '**2';
+          break;
+        case 'reciprocal':
+          label = '1÷(';
+          evalStr = '1/(';
+          break;
+        case 'pi':
+          label = 'π';
+          evalStr = 'pi';
+          break;
+        case 'parenOpen':
+          label = '(';
+          evalStr = '(';
+          break;
+        case 'parenClose':
+          label = ')';
+          evalStr = ')';
+          break;
+        case 'factorial':
+          label = '!';
+          evalStr = '!';
+          break;
+        case 'fraction':
+          label = ' / ';
+          evalStr = '/';
+          break;
+        default:
+          break;
+      }
+
+      if (isShift) {
+        isShift = false;
+      }
+
+      if (['^', '^2', '^3', '!', '%'].includes(label)) {
+        if (currentInput !== '0') {
+          displayFormula = displayFormula + currentInput + label;
+          evalFormula = evalFormula + currentInput + evalStr;
+          currentInput = '0';
+        } else {
+          displayFormula = displayFormula + label;
+          evalFormula = evalFormula + evalStr;
+        }
+      } else {
+        if (currentInput !== '0') {
+          displayFormula = displayFormula + currentInput + ' × ' + label;
+          evalFormula = evalFormula + currentInput + ' * ' + evalStr;
+          currentInput = '0';
+        } else {
+          displayFormula = displayFormula + label;
+          evalFormula = evalFormula + evalStr;
+        }
+      }
+      updateDisplay();
+    }
+
+    // ON/CA 전체 지우기
+    function allClear() {
+      displayFormula = '';
+      evalFormula = '';
+      currentInput = '0';
+      isEvaluated = false;
+      historyIndex = -1;
+      updateDisplay();
+    }
+
+    // CE 현재 입력만 지우기
+    function clearEntry() {
+      currentInput = '0';
+      updateDisplay();
+    }
+
+    // 한 글자 지우기 (DEL)
+    function backspace() {
+      if (isEvaluated) {
+        displayFormula = '';
+        evalFormula = '';
+        isEvaluated = false;
+        updateDisplay();
+        return;
+      }
+      if (currentInput.length > 1) {
+        currentInput = currentInput.slice(0, -1);
+      } else {
+        currentInput = '0';
+      }
+      updateDisplay();
+    }
+
+    // EXP 소수점 지수 표기법 기틀 마련
+    function inputExp() {
+      if (currentInput === '0') {
+        currentInput = '1e+';
+      } else if (!currentInput.includes('e')) {
+        currentInput = currentInput + 'e+';
+      }
+      updateDisplay();
+    }
+
+    // Ans 메모리 호출
+    function inputAns() {
+      if (isEvaluated) {
+        displayFormula = 'Ans';
+        evalFormula = 'lastAnswer';
+        currentInput = '0';
+        isEvaluated = false;
+      } else {
+        if (currentInput === '0') {
+          displayFormula = displayFormula + 'Ans';
+          evalFormula = evalFormula + 'lastAnswer';
+        } else {
+          displayFormula = displayFormula + currentInput + ' × Ans';
+          evalFormula = evalFormula + currentInput + ' * lastAnswer';
+          currentInput = '0';
+        }
+      }
+      updateDisplay();
+    }
+
+    // D-Pad 탐색 기믹 구현
+    function handleDPad(direction) {
+      if (history.length === 0) return;
+
+      let nextIndex = historyIndex;
+      if (direction === 'up') {
+        if (historyIndex < history.length - 1) {
+          nextIndex = historyIndex + 1;
+        }
+      } else if (direction === 'down') {
+        if (historyIndex > 0) {
+          nextIndex = historyIndex - 1;
+        } else if (historyIndex === 0) {
+          nextIndex = -1;
+        }
+      }
+
+      historyIndex = nextIndex;
+
+      if (nextIndex === -1) {
+        displayFormula = '';
+        evalFormula = '';
+        currentInput = '0';
+        isEvaluated = false;
+      } else {
+        const selectedItem = history[nextIndex];
+        displayFormula = selectedItem.formula;
+        
+        let converted = selectedItem.formula
+          .replace(/×/g, '*')
+          .replace(/÷/g, '/')
+          .replace(/π/g, 'pi')
+          .replace(/Ans/g, 'lastAnswer')
+          .replace(/³/g, 'cbrt')
+          .replace(/√/g, 'sqrt')
+          .replace(/\^/g, '**');
+
+        evalFormula = converted;
+        currentInput = selectedItem.result;
+        isDegree = selectedItem.isDegree;
+        isEvaluated = true;
+      }
+      updateDisplay();
+    }
+
+    // 수식 안전 변환 평가 (=)
+    function evaluateFormula() {
+      let finalFormula = displayFormula;
+      let finalEval = evalFormula;
+
+      if (currentInput !== '0' && !isEvaluated) {
+        finalFormula += currentInput;
+        finalEval += currentInput;
+      }
+
+      if (!finalFormula || finalFormula === '') return;
+
+      let openCount = (finalEval.match(/\(/g) || []).length;
+      let closeCount = (finalEval.match(/\)/g) || []).length;
+      while (openCount > closeCount) {
+        finalFormula += ')';
+        finalEval += ')';
+        closeCount++;
+      }
+
+      let evalToParse = finalEval;
+      evalToParse = evalToParse.replace(/([0-9.]+)\!/g, 'fact($1)');
+      evalToParse = evalToParse.replace(/(pi|e|lastAnswer)\!/g, 'fact($1)');
+
+      while (evalToParse.includes(')!')) {
+        let idx = evalToParse.indexOf(')!');
+        let parenCount = 1;
+        let startIdx = -1;
+        for (let i = idx - 1; i >= 0; i--) {
+          if (evalToParse[i] === ')') parenCount++;
+          if (evalToParse[i] === '(') parenCount--;
+          if (parenCount === 0) {
+            startIdx = i;
+            break;
+          }
+        }
+        if (startIdx !== -1) {
+          const inside = evalToParse.slice(startIdx + 1, idx);
+          evalToParse = evalToParse.slice(0, startIdx) + `fact(${inside})` + evalToParse.slice(idx + 2);
+        } else {
+          break;
+        }
+      }
+
+      try {
+        const safeEvalFn = new Function(
+          'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln', 'sqrt', 'cbrt', 'fact', 'pi', 'e', 'lastAnswer',
+          `return (${evalToParse});`
+        );
+
+        const resultVal = safeEvalFn(
+          mathScope.sin,
+          mathScope.cos,
+          mathScope.tan,
+          mathScope.asin,
+          mathScope.acos,
+          mathScope.atan,
+          mathScope.log,
+          mathScope.ln,
+          mathScope.sqrt,
+          mathScope.cbrt,
+          mathScope.fact,
+          mathScope.pi,
+          mathScope.e,
+          parseFloat(lastAnswer) || 0
+        );
+
+        if (isNaN(resultVal) || !isFinite(resultVal)) {
+          throw new Error("Invalid calculation");
+        }
+
+        const formattedResult = Number(resultVal.toFixed(10)).toString();
+        
+        currentInput = formattedResult;
+        displayFormula = finalFormula;
+        evalFormula = finalEval;
+        lastAnswer = formattedResult;
+        isEvaluated = true;
+
+        const record = {
+          id: Date.now(),
+          formula: finalFormula,
+          result: formattedResult,
+          isDegree: isDegree
+        };
+        history = [record, ...history];
+        historyIndex = -1;
+
+      } catch (err) {
+        currentInput = 'Error';
+        isEvaluated = true;
+      }
+      updateDisplay();
+    }
+
+    // Shift, Alpha, Mode 토글 제어
+    function toggleShift() {
+      isShift = !isShift;
+      isAlpha = false;
+      updateDisplay();
+    }
+
+    function toggleAlpha() {
+      isAlpha = !isAlpha;
+      isShift = false;
+      updateDisplay();
+    }
+
+    function toggleMode() {
+      isDegree = !isDegree;
+      updateDisplay();
+    }
+
+    // 모달 및 히스토리 관리부
+    function showHistory() {
+      const container = document.getElementById('history-container');
+      const clearBtn = document.getElementById('btn-clear-history');
+      container.innerHTML = '';
+
+      if (history.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-slate-500 text-xs font-mono">기록된 계산 이력이 없습니다.</div>';
+        clearBtn.classList.add('hidden');
+      } else {
+        clearBtn.classList.remove('hidden');
+        history.forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.className = 'p-3 bg-[#24272c] hover:bg-[#2e3239] border border-[#343940] rounded-lg cursor-pointer transition-all text-right group';
+          div.onclick = () => {
+            displayFormula = item.formula;
+            evalFormula = item.formula.replace(/×/g, '*').replace(/÷/g, '/');
+            currentInput = item.result;
+            isEvaluated = true;
+            historyIndex = idx;
+            closeHistory();
+            updateDisplay();
+          };
+          div.innerHTML = `
+            <div class="text-[10px] text-slate-500 font-mono mb-1 truncate">${item.formula}</div>
+            <div class="text-sm font-bold text-teal-400 font-mono">= ${item.result}</div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      document.getElementById('modal-history').classList.remove('hidden');
+      document.getElementById('modal-history').classList.add('flex');
+    }
+
+    function closeHistory() {
+      document.getElementById('modal-history').classList.add('hidden');
+      document.getElementById('modal-history').classList.remove('flex');
+    }
+
+    function clearAllHistory() {
+      history = [];
+      closeHistory();
+      updateDisplay();
+    }
+
+    function showHelpModal() {
+      document.getElementById('modal-help').classList.remove('hidden');
+      document.getElementById('modal-help').classList.add('flex');
+    }
+
+    document.getElementById('modal-help').onclick = function(e) {
+      if (e.target === this) closeHelpModal();
+    }
+    document.getElementById('modal-history').onclick = function(e) {
+      if (e.target === this) closeHistory();
+    }
+
+    function closeHelpModal() {
+      document.getElementById('modal-help').classList.add('hidden');
+      document.getElementById('modal-help').classList.remove('flex');
+    }
+
+    // 키보드 연동 이벤트
+    window.addEventListener('keydown', (e) => {
+      const key = e.key;
+      if (/[0-9]/.test(key)) {
+        inputNumber(key);
+      } else if (key === '.') {
+        inputDecimal();
+      } else if (key === '+' || key === '-' || key === '*' || key === '/') {
+        let op = key;
+        if (key === '*') op = '×';
+        if (key === '/') op = '÷';
+        inputOperator(op);
+      } else if (key === 'Enter' || key === '=') {
+        e.preventDefault();
+        evaluateFormula();
+      } else if (key === 'Backspace') {
+        backspace();
+      } else if (key === 'Escape') {
+        allClear();
+      }
+    });
+
+    // 앱 실행 최초 세팅
+    window.onload = function() {
+      lucide.createIcons();
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>
+
+```
